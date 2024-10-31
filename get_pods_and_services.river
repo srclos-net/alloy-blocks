@@ -1,0 +1,112 @@
+declare "get_pods_and_services" {
+  argument "statsd_exporter" {
+    optional = false
+    comment  = "The statsd exporter instance to use"
+  }
+
+  argument "label_matcher" {
+    optional = false
+    comment  = "The regex to match for the app name"
+  }
+
+  argument "meta_app_name" {
+    optional = false
+    comment  = "The metadata key for the app name"
+  }
+
+  discovery.kubernetes "pods" {
+    role = "pod"
+  }
+
+  discovery.kubernetes "services" {
+    role = "service"
+  }
+
+  discovery.relabel "pod_filter" {
+    targets = discovery.kubernetes.pods.targets
+
+    rule {
+      source_labels = [argument.meta_app_name.value]
+      regex = argument.label_matcher.value
+      action = "keep"
+    }
+    
+    rule {
+      source_labels = ["__meta_kubernetes_pod_container_port_name"]
+      regex = "healthcheck"
+      action = "drop"
+    }
+
+    rule {
+      source_labels = ["__meta_kubernetes_pod_node_name"]
+      regex = "__meta_kubernetes_pod_node_name"
+      action = "labelmap"
+      replacement = "node"
+    }
+
+    rule {
+      source_labels = ["__meta_kubernetes_pod_label_app"]
+      regex = "__meta_kubernetes_pod_label_app"
+      action = "labelmap"
+      replacement = "app"
+    }	 
+    
+    rule {
+      source_labels = ["__meta_kubernetes_pod_name"]
+      regex = "__meta_kubernetes_pod_name"
+      action = "labelmap"
+      replacement = "pod_name"
+    }
+    
+    rule {
+      source_labels = ["__meta_component_id"]
+      regex = ""
+      replacement = argument.statsd_exporter.value
+      target_label = "__meta_component_id"
+    }
+  } 
+
+  discovery.relabel "service_filter" {
+    targets = discovery.kubernetes.services.targets
+
+    rule {
+      source_labels = ["__meta_kubernetes_service_label_app"]
+      regex = "veneur-emit-[0-9]+"
+      action = "keep"
+    }
+
+    rule {
+      source_labels = ["__meta_kubernetes_service_label_app"]
+      regex = "__meta_kubernetes_service_label_app"
+      action = "labelmap"
+      replacement = "app"
+    }	                                                       
+
+    
+    rule {
+      source_labels = ["__meta_kubernetes_service_name"]
+      regex = "__meta_kubernetes_service_name"
+      action = "labelmap"
+      replacement = "service_name"
+    }
+    
+    rule {
+      source_labels = ["__meta_component_id"]
+      regex = ""
+      replacement = "prometheus.exporter.statsd.veneur"
+      target_label = "__meta_component_id"
+    }
+  } 
+  
+  export "targets" {
+    value = targets.merge(discovery.relabel.service_filter.output, discovery.relabel.pod_filter.output, ["app"])
+  }
+
+  export "pods" {
+    value = discovery.relabel.pod_filter.output
+  }
+
+  export "services" {
+    value = discovery.relabel.service_filter.output
+  }
+}
