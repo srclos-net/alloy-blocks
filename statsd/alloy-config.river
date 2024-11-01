@@ -1,0 +1,91 @@
+    logging {
+      level  = "info"
+      format = "logfmt"
+    }
+
+    prometheus.exporter.statsd "veneur" {
+      listen_udp            = ":8126"
+      listen_tcp            = ":8127"
+      unix_socket_mode      = "755"
+      read_buffer           = 1
+      cache_size            = 1000
+      cache_type            = "lru"
+      event_queue_size      = 10000
+      event_flush_threshold = 1000
+      event_flush_interval  = "200ms"
+      parse_dogstatsd_tags  = true
+      parse_influxdb_tags   = true
+      parse_librato_tags    = true
+      parse_signalfx_tags   = true
+    }
+
+    import.git "blocks" {
+      repository = "https://github.com/srclos-net/alloy-blocks.git"
+      revision   = "main"
+      path       = "get_pods_and_services.river"
+    }
+
+    blocks.get_pods_and_services "default" {
+      statsd_exporter = "prometheus.exporter.statsd.veneur"
+      label_matcher = "veneur-emit-[0-9]+"
+      meta_app_name = "__meta_kubernetes_pod_label_app"
+    }
+
+    prometheus.scrape "veneur" {
+      clustering {
+        enabled = true
+      }
+      targets    = targets.merge(blocks.get_pods_and_services.default.targets, prometheus.exporter.statsd.veneur.targets, ["__meta_component_id"])
+      forward_to = [prometheus.relabel.metrics_service.receiver]
+    }
+
+    prometheus.relabel "metrics_service" {
+      forward_to = [prometheus.remote_write.metrics_service.receiver]
+
+      rule {
+        regex = "instance"
+        action = "labeldrop"
+      }
+    }
+        
+    remote.kubernetes.secret "metrics_service" {
+      name = "prometheus-k8s-monitoring"
+      namespace = "observability"
+    }
+
+    prometheus.remote_write "metrics_service" {
+      endpoint {
+        url = nonsensitive(remote.kubernetes.secret.metrics_service.data["host"]) + "/api/prom/push"
+        headers = {
+          "X-Scope-OrgID" = nonsensitive(remote.kubernetes.secret.metrics_service.data["tenantId"]),
+        }
+
+        basic_auth {
+          username = nonsensitive(remote.kubernetes.secret.metrics_service.data["username"])
+          password = remote.kubernetes.secret.metrics_service.data["password"]
+        }
+
+        send_native_histograms = false
+
+        queue_config {
+          capacity = 10000
+          min_shards = 1
+          max_shards = 50
+          max_samples_per_send = 2000
+          batch_send_deadline = "5s"
+          min_backoff = "30ms"
+          max_backoff = "5s"
+          retry_on_http_429 = true
+          sample_age_limit = "0s"
+        }
+      }
+
+      wal {
+        truncate_frequency = "2h"
+        min_keepalive_time = "5m"
+        max_keepalive_time = "8h"
+      }
+
+      external_labels = {
+      }
+    }
