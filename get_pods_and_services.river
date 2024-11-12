@@ -99,7 +99,7 @@ declare "get_pods_and_services" {
   } 
   
   export "targets" {
-    value = targets.merge(discovery.relabel.service_filter.output, discovery.relabel.pod_filter.output, ["app"])
+    value = array.combine_maps(discovery.relabel.service_filter.output, discovery.relabel.pod_filter.output, ["app"])
   }
 
   export "pods" {
