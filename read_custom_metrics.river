@@ -1,0 +1,43 @@
+declare "read_custom_metrics" {
+  argument "uniq_id" {
+    optional = false
+    comment  = "The unique id to define your running instance"
+  }
+
+  argument "username" {
+    optional = false
+    comment  = "basic auth username to write data"
+  }
+
+  argument "password" {
+    optional = false
+    comment  = "The password to use"
+  }
+
+  argument "endpoint" {
+    optional = false
+    comment = "The endpoint to write to"
+  }
+
+  prometheus.scrape "custom_metrics_scraper" {
+    targets = [
+      {"__address__" = "promdata.srclos.net", "uniq_id" = argument.uniq_id.value},
+    ]
+    scheme = "https"
+    tls_config {
+      insecure_skip_verify = true
+    }
+    
+    forward_to = [prometheus.remote_write.grafanacloud.receiver]
+  }
+
+  prometheus.remote_write "grafanacloud" {
+    endpoint {
+      url = argument.endpoint.value
+        basic_auth {
+          username = argument.username.value
+          password = argument.password.value
+        }
+    }
+  }
+}
