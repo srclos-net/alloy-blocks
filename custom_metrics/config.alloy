@@ -1,0 +1,11 @@
+remotecfg {
+    url = sys.env("GCLOUD_ENDPOINT")
+    basic_auth {
+        username = sys.env("GCLOUD_USERNAME")
+        password = sys.env("GCLOUD_PASSWORD")
+    }
+
+    id             = constants.hostname
+    attributes     = {"heat" = "toasty", "username" = sys.env("GCLOUD_NICKNAME"), "exercise" = "alloydd"}
+    poll_frequency = "5m"
+}
