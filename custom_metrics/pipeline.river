@@ -1,0 +1,12 @@
+import.git "blocks" {
+	repository = "https://github.com/srclos-net/alloy-blocks.git"
+	revision   = "main"
+	path       = "read_custom_metrics.river"
+}
+
+blocks.read_custom_metrics "default" {
+	uniq_id  = sys.env("CUSTOM_METRICS_UNIQ_ID")
+	endpoint = sys.env("CUSTOM_METRICS_ENDPOINT")
+	username = sys.env("CUSTOM_METRICS_USERNAME")
+	password = sys.env("CUSTOM_METRICS_PASSWORD")
+}
