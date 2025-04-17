@@ -5,8 +5,8 @@ import.git "blocks" {
 }
 
 blocks.read_custom_metrics "default" {
-	uniq_id  = sys.env("CUSTOM_METRICS_UNIQ_ID")
-	endpoint = sys.env("CUSTOM_METRICS_ENDPOINT")
-	username = sys.env("CUSTOM_METRICS_USERNAME")
-	password = sys.env("CUSTOM_METRICS_PASSWORD")
+	uniq_id  = sys.env("GCLOUD_LABEL_UNIQID")
+	endpoint = sys.env("GCLOUD_PROM_ENDPOINT")
+	username = sys.env("GCLOUD_PROM_USERNAME")
+	password = sys.env("GCLOUD_RW_API_KEY")
 }

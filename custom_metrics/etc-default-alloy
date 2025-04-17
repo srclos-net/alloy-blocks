@@ -15,8 +15,30 @@ CUSTOM_ARGS=""
 # Restart on system upgrade. Defaults to true.
 RESTART_ON_UPGRADE=true
 
-GCLOUD_FM_NICKNAME=""
+# Use this to identify yourself to the application
+# ex: toastysteph
+GCLOUD_LABEL_UNIQID=""
+
+# This is your prometheus username
+# Found at grafana.com
+GCLOUD_PROM_USERNAME=""
+
+# This is your prometheus endpoint
+# found at grafana.com
+GCLOUD_PROM_ENDPOINT=""
+
+# This is your fleet management username
+# found in your stack under Home > Connections > Collector > Fleet Management > API
 GCLOUD_FM_USERNAME=""
+
+# This is your fleet management endpoint
+# found in your stack under Home > Connections > Collector > Fleet Management > API
 GCLOUD_FM_ENDPOINT=""
+
+# This is your grafana.com api key
+# found on grafana.com > my account > <select org> > Access Policies 
 GCLOUD_FM_API_KEY=""
+
+# This is your fleet management username
+# found on grafana.com > my account > <select org> > Access Policies
 GCLOUD_RW_API_KEY=""
